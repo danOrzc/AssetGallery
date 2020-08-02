@@ -1,9 +1,14 @@
 import os
+import random
 import ObjectLibrary as OL
 import AssetConfig as AC
 import EnvironmentCreation as EC
 import RoadCreation as RC
+import ObjectScattering as ObjScatter
 from maya import cmds
+import maya.api.OpenMaya as om
+import maya.api.OpenMayaUI as omui2
+reload(ObjScatter)
 reload(OL)
 reload(AC)
 reload(EC)
@@ -11,8 +16,14 @@ reload(RC)
 
 objectScroll = ""
 loadMethodRadio = ""
+placingRadio = ""
+viewportHeight = 0
 
 def createWindow():
+    """
+    This function initializes the window and displays it.
+    """
+
     windowName = "ObjectSpawner"
 
     if cmds.window(windowName, query=True, exists=True):
@@ -21,10 +32,22 @@ def createWindow():
     cmds.window(windowName)
 
     populateUI()
+    enableEditorDrop()
 
     cmds.showWindow(windowName)
 
+def enableEditorDrop():
+    perspPanel = cmds.getPanel( withLabel='Persp View')
+    panelControl = cmds.panel( perspPanel, query=True, control=True)
+    cmds.control(panelControl, edit=True, dropCallback=panelDropLoad)
+    global viewportHeight
+    viewportHeight = cmds.control(panelControl, query=True, h=True)
+
+
 def populateUI():
+    """
+    This function manages everything inside the UI, the tabs, buttons, etc.
+    """
     
     form = cmds.formLayout()
 
@@ -32,6 +55,7 @@ def populateUI():
 
     cmds.formLayout( form, edit=True, attachForm=((tabs, 'top', 0), (tabs, 'left', 0), (tabs, 'bottom', 0), (tabs, 'right', 0)) )
 
+    # The different Tabs on the window
     spawnTab = SpawnObjectsTab()
     roadTab = RoadRiverTab()
     environmentTab = EnvironmentTab()
@@ -52,7 +76,6 @@ def SpawnObjectsTab():
     
     populateGallery()
 
-    #cmds.setParent('..') # Exit Grid Layout
     cmds.setParent(mainTab) # Exit scroll layout
 
     cmds.separator(height=10, style="none")
@@ -64,10 +87,32 @@ def SpawnObjectsTab():
     cmds.radioButton("standin", label="Load as Arnold StandIn", select=True)
     cmds.separator(width=20, style="none")
     cmds.radioButton("assembly", label="Load as Assembly Reference")
-
     cmds.setParent(mainTab)
+
+    global placingRadio
+    cmds.separator(height=10)
+    cmds.text(label="Spawning method:", align="left")
+    cmds.separator(height=5, style="none")
+    cmds.rowLayout(numberOfColumns=4, adjustableColumn=4, columnAttach4=("both","both","both","both"), columnOffset4=(10,10,10,10))
+    placingRadio = cmds.radioCollection()
+    cmds.radioButton("single", label="Single Object", select=True)
+    cmds.radioButton("curve", label="Along Curve")
+    cmds.radioButton("range", label="In Range")
+    cmds.radioButton("mesh", label="On Mesh")
+    cmds.setParent(mainTab)
+
     cmds.separator(height=10, style="none")
-    cmds.button(label='Load Selected Objects', command=lambda x: listObjects(x))
+
+    SpawnObjectsTab.BuildingAmount = cmds.intSliderGrp(label="Building Number", field=True, value=10, min=2, max=50)
+    SpawnObjectsTab.RandomRotation = cmds.floatSliderGrp(label="Random Rotation", field=True, value=15, min=0, max=360)
+    SpawnObjectsTab.RandomScale = cmds.floatSliderGrp(label="Random Scale", field=True, value=0, min=0, max=10)
+
+    curveLayout = cmds.columnLayout()
+    
+    cmds.setParent(mainTab)
+
+    cmds.separator(height=10, style="none")
+    cmds.button(label='Load Selected Objects', command=lambda x: choosePlacement(x))
 
     cmds.setParent('..') # Exit column layout
 
@@ -77,7 +122,6 @@ def populateGallery():
     global objectScroll
     cmds.setParent(objectScroll)
 
-    #assetList =  os.listdir(AC.ASSETS_PATH)
     assetList = [directory for directory in os.listdir(AC.ASSETS_PATH) if os.path.isdir(os.path.join(AC.ASSETS_PATH, directory))]
 
     for asset in assetList:
@@ -102,9 +146,16 @@ def saveAsset(*args):
     OL.addObjectToLibrary(name)
     addButtonIcon(name)
 
-def listObjects(*args):
-    selectedRadio = cmds.radioCollection(loadMethodRadio, query=True, select=True)
+def choosePlacement(*args):
+    placingMethod = cmds.radioCollection(placingRadio, query=True, select=True)
 
+    if "single" in placingMethod:
+        loadSingleObject()
+    if "curve" in placingMethod:
+        loadInCurve()
+
+def loadSingleObject(*args):
+    selectedRadio = cmds.radioCollection(loadMethodRadio, query=True, select=True)
     objectIconsList = cmds.layout(objectScroll, query=True, childArray=True)
 
     for obj in objectIconsList:
@@ -117,6 +168,65 @@ def listObjects(*args):
                 asset.loadArnoldAsset()
             else: 
                 asset.loadAsset()
+
+def loadInCurve(*args):
+    selectedCurve = cmds.ls(selection=True)
+
+    if not selectedCurve:
+        return
+
+    selectedCurve = selectedCurve[0]
+
+    selectedRadio = cmds.radioCollection(loadMethodRadio, query=True, select=True)
+    objectIconsList = cmds.layout(objectScroll, query=True, childArray=True)
+    selectedObjects = []
+    finalGroup = cmds.group(name="CurveAssetGroup", empty=True)
+    buildingAmount = cmds.intSliderGrp(SpawnObjectsTab.BuildingAmount, query=True, value=True)
+    rotationVariation = cmds.floatSliderGrp(SpawnObjectsTab.RandomRotation, query=True, value=True)
+    scaleVariation = cmds.floatSliderGrp(SpawnObjectsTab.RandomScale, query=True, value=True)
+
+    for obj in objectIconsList:
+        isSelected = cmds.iconTextCheckBox(obj, query=True, value=True)
+
+        if isSelected:
+            selectedObjects.append(cmds.iconTextCheckBox(obj, query=True, label=True))
+
+    for position in ObjScatter.scatterOnCurve(selectedCurve, buildingAmount-1):
+        asset = AssetIcon(random.choice(selectedObjects))
+        loadedAssetNode = None
+
+        if "standin" in selectedRadio:
+            loadedAssetNode = asset.loadArnoldAsset()
+        else: 
+            loadedAssetNode = asset.loadAsset()
+
+        cmds.move(position[0], position[1], position[2], loadedAssetNode, absolute=True)
+
+        angle = random.uniform(-rotationVariation, rotationVariation)
+        cmds.rotate(angle, loadedAssetNode, y=True, absolute=True)
+
+        newScale = random.uniform(1, 1+scaleVariation)
+        cmds.scale(newScale, newScale, newScale, loadedAssetNode, absolute=True)
+
+        cmds.parent(loadedAssetNode, finalGroup)
+
+
+def panelDropLoad( dragControl, dropControl, messages, x, y, dragType ): 
+    loadedObject = cmds.iconTextCheckBox(dragControl, query=True, label=True)
+    selectedRadio = cmds.radioCollection(loadMethodRadio, query=True, select=True)
+    asset = AssetIcon(loadedObject)
+   
+    loadedAssetNode = None
+
+    if "standin" in selectedRadio:
+        loadedAssetNode = asset.loadArnoldAsset()
+    else: 
+        loadedAssetNode = asset.loadAsset()
+        
+    loadedLocation = cmds.autoPlace(useMouse=True)
+    cmds.move(loadedLocation[0], loadedLocation[1], loadedLocation[2], loadedAssetNode, absolute=True)
+
+#######################################33
 
 def RoadRiverTab():
     mainTab = cmds.columnLayout(adjustableColumn=True, columnAttach=('both', 20))
@@ -137,6 +247,8 @@ def buildRoad(*args):
     quality = cmds.intSliderGrp(RoadRiverTab.roadQuality, query=True, value=True)
 
     RC.createRoad(width, quality)
+
+##########################
 
 def EnvironmentTab():
     mainTab = cmds.columnLayout(adjustableColumn=True, columnAttach=('both', 20))
@@ -163,10 +275,15 @@ class AssetIcon(object):
             self.buildIcon()
 
     def buildIcon(self):
-        cmds.iconTextCheckBox(image=self.icon, style="iconOnly", label=self.name, height=200, width=200)
+        cmds.iconTextCheckBox(image=self.icon, style="iconOnly", label=self.name, height=200, width=200, dragCallback=lambda *x: self.iconDrag(*x))
 
     def loadAsset(self, *args):
-        OL.loadAssemblyReference(self.name)
+        asset = OL.loadAssemblyReference(self.name)
+        return asset
 
     def loadArnoldAsset(self, *args):
-        OL.loadStandIn(self.name)
+        asset = OL.loadStandIn(self.name)
+        return asset
+
+    def iconDrag(self, dragControl, x, y, modifiers ): 
+        pass

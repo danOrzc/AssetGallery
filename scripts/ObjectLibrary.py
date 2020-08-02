@@ -136,9 +136,6 @@ def exportStandIn(name):
 
     resetAfterExport(selectedObject, originalPos)
 
-    #file -force -options "-shadowLinks 1;-mask 6399;-lightLinks 1;-boundingBox;-fullPath" -typ "ASS Export" -pr -es "C:/Users/dog_d/Documents/BCIT/AdvancedScripting/Props1/Props/scenes/StandInTest2.ass";
-    #arnoldExportAss -f "C:/Users/dog_d/Documents/BCIT/AdvancedScripting/Props1/Props/scenes/StandInTest2.ass" -s -shadowLinks 1 -mask 6399 -lightLinks 1 -boundingBox -fullPath-cam perspShape;
-
 def removeStudent(fileName):
     """
     This function removes the student tag on the file so it can be opened without the pop up
@@ -180,6 +177,8 @@ def loadAssemblyReference(name):
 
     # Set cache as default active representation
     cmds.assembly(assemblyReference, edit=True, active="myCache")
+
+    return assemblyReference
     
 def loadCache(name):
     """
@@ -214,3 +213,5 @@ def loadStandIn(name):
 
     transform = cmds.listRelatives(standinNode, parent=True)
     transform = cmds.rename(transform, "{}_StandIn".format(name))
+
+    return transform
