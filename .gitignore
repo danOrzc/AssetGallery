@@ -1,5 +1,4 @@
 # Ignore Python compile files
 *.pyc
 
-# Ignore assets folder
-Build/*
+Assets/*
