@@ -1,6 +1,7 @@
 from maya import cmds
 import maya.api.OpenMaya as om
 import random
+import math
 
 def scatterOnCurve(curve, objectCount=5, **kwargs):
 
@@ -26,6 +27,12 @@ def scatterOnMesh(objectCount, mesh, **kwargs):
     for i in xrange(objectCount):
         position = get3DPosition(mesh)
 
+        # Rotate upvector towards normal
+        rotateQuat = om.MQuaternion(om.MVector(0, 1, 0), om.MVector(position[3]))
+
+        rotateEuler = rotateQuat.asEulerRotation()
+        rotation = [math.degrees(i) for i in rotateEuler]
+        position[3] = rotation
         yield position
 
 
@@ -53,7 +60,11 @@ def getPointAtUV(mesh, U, V):
         for face in range(mesh.numPolygons):
             try:
                 point = mesh.getPointAtUV(face,U,V,space=om.MSpace.kWorld,uvSet=uvset[0],tolerance=0.0)
-                return list(point)[:3]
+
+                normal = mesh.getPolygonNormal(face)
+
+                result = list(point)[:3] + [list(normal)]
+                return result
             except:
                 pass
 

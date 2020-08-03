@@ -112,7 +112,7 @@ def SpawnObjectsTab():
     cmds.separator(height=10, style="none")
 
     randomControlLayout = cmds.columnLayout(enable=False)
-    SpawnObjectsTab.BuildingAmount = cmds.intSliderGrp(label="Building Number", field=True, value=10, min=2, max=50)
+    SpawnObjectsTab.BuildingAmount = cmds.intSliderGrp(label="Building Number", field=True, value=10, min=2, max=50, fieldMaxValue=200)
     SpawnObjectsTab.RandomRotation = cmds.floatSliderGrp(label="Random Rotation", field=True, value=15, min=0, max=360)
     SpawnObjectsTab.RandomScale = cmds.floatSliderGrp(label="Random Scale", field=True, value=0, min=0, max=10)
     cmds.setParent(mainTab)
@@ -251,11 +251,16 @@ def loadMultiple(method, *args):
 
         cmds.move(position[0], position[1], position[2], loadedAssetNode, absolute=True)
 
+        if len(position) == 4:
+            cmds.rotate(position[3][0], position[3][1], position[3][2], loadedAssetNode, absolute=True)
+        
         angle = random.uniform(-rotationVariation, rotationVariation)
-        cmds.rotate(angle, loadedAssetNode, y=True, absolute=True)
+        cmds.rotate(angle, loadedAssetNode, y=True, relative=True, objectSpace=True)
 
         newScale = random.uniform(1, 1+scaleVariation)
         cmds.scale(newScale, newScale, newScale, loadedAssetNode, absolute=True)
+
+        #cmds.FreezeTransformations(loadedAssetNode)
 
         cmds.parent(loadedAssetNode, finalGroup)
 
