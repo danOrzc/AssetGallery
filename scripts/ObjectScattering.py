@@ -1,4 +1,5 @@
 from maya import cmds
+import maya.api.OpenMaya as om
 import random
 
 def scatterOnCurve(curve, objectCount=5, **kwargs):
@@ -20,3 +21,40 @@ def scatterOnRange(objectCount, minX, minY, minZ, maxX, maxY, maxZ, **kwargs):
         randomZ = random.uniform(minZ, maxZ)
 
         yield (randomX, randomY, randomZ)
+
+def scatterOnMesh(objectCount, mesh, **kwargs):
+    for i in xrange(objectCount):
+        position = get3DPosition(mesh)
+
+        yield position
+
+
+def get3DPosition(mesh):
+    randomU = random.uniform(0,1)
+    randomV = random.uniform(0,1)
+    position = getPointAtUV(mesh, randomU, randomV)
+
+    if not position:
+        position = get3DPosition(mesh)
+    return position
+
+
+def getPointAtUV(mesh, U, V):
+    
+    selList = om.MSelectionList()
+    selList.add(mesh)
+    dagPath = selList.getDagPath(0)
+    
+    # Check if selected object is a mesh
+    if dagPath.hasFn( om.MFn.kMesh ):
+        mesh  = om.MFnMesh(dagPath)
+        uvset = mesh.getUVSetNames()
+        
+        for face in range(mesh.numPolygons):
+            try:
+                point = mesh.getPointAtUV(face,U,V,space=om.MSpace.kWorld,uvSet=uvset[0],tolerance=0.0)
+                return list(point)[:3]
+            except:
+                pass
+
+    return None

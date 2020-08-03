@@ -66,6 +66,9 @@ def SpawnObjectsTab():
     mainTab = cmds.columnLayout(adjustableColumn=True, columnAttach=('both', 20))
 
     cmds.separator(height=10, style="none")
+    cmds.text(label="Asset Gallery:", align="left")
+
+    cmds.separator(height=10, style="none")
     SpawnObjectsTab.UserField = cmds.textFieldButtonGrp(placeholderText="Write Asset's Name", buttonLabel="Save Asset", buttonCommand=lambda: saveAsset())
     cmds.separator(height=10, style="none")
     
@@ -102,8 +105,8 @@ def SpawnObjectsTab():
     cmds.radioButton("range", label="In Range",
                     onCommand=lambda x: cmds.columnLayout(rangeLayout, edit=True, visible=True),
                     offCommand=lambda x: cmds.columnLayout(rangeLayout, edit=True, visible=False))
-    #cmds.radioButton("mesh", label="On Mesh")
-    cmds.separator(style="none")
+    cmds.radioButton("mesh", label="On Mesh")
+    #cmds.separator(style="none")
     cmds.setParent(mainTab)
 
     cmds.separator(height=10, style="none")
@@ -163,6 +166,8 @@ def choosePlacement(*args):
         loadMultiple("curve")
     if "range" in placingMethod:
         loadMultiple("range")
+    if "mesh" in placingMethod:
+        loadMultiple("mesh")
 
 def loadSingleObject(*args):
     selectedRadio = cmds.radioCollection(loadMethodRadio, query=True, select=True)
@@ -181,13 +186,13 @@ def loadSingleObject(*args):
 
 def loadMultiple(method, *args):
 
-    selectedCurve = None
+    selectedCurve = selectedMesh = None
     minRangeX = minRangeY = minRangeZ = maxRangeX = maxRangeY = maxRangeZ = 0
+
+    selectedObjects = []
 
     selectedRadio = cmds.radioCollection(loadMethodRadio, query=True, select=True)
     objectIconsList = cmds.layout(objectScroll, query=True, childArray=True)
-    selectedObjects = []
-    finalGroup = cmds.group(name="CurveAssetGroup", empty=True)
     buildingAmount = cmds.intSliderGrp(SpawnObjectsTab.BuildingAmount, query=True, value=True)
     rotationVariation = cmds.floatSliderGrp(SpawnObjectsTab.RandomRotation, query=True, value=True)
     scaleVariation = cmds.floatSliderGrp(SpawnObjectsTab.RandomScale, query=True, value=True)
@@ -219,10 +224,22 @@ def loadMultiple(method, *args):
 
         maxValues = cmds.floatFieldGrp(SpawnObjectsTab.MaximumField, query=True, value=True)
         maxRangeX, maxRangeY, maxRangeZ = maxValues[0], maxValues[1], maxValues[2]
+
+    if method == "mesh":
+        scatteringFunction = ObjScatter.scatterOnMesh
+        selectedMesh = cmds.ls(selection=True)
+
+        if not selectedMesh:
+            return
+
+        selectedMesh = selectedMesh[0]
         
+    finalGroup = cmds.group(name="CurveAssetGroup", empty=True)
+    cmds.select(clear=True)
 
     for position in scatteringFunction(objectCount=buildingAmount, curve=selectedCurve,
-                                       minX=minRangeX, minY=minRangeY, minZ=minRangeZ, maxX=maxRangeX, maxY=maxRangeY, maxZ=maxRangeZ):
+                                       minX=minRangeX, minY=minRangeY, minZ=minRangeZ, maxX=maxRangeX, maxY=maxRangeY, maxZ=maxRangeZ,
+                                       mesh=selectedMesh):
         
         asset = AssetIcon(random.choice(selectedObjects))
         loadedAssetNode = None
@@ -263,6 +280,7 @@ def RoadRiverTab():
     mainTab = cmds.columnLayout(adjustableColumn=True, columnAttach=('both', 20))
     
     cmds.separator(height=10, style="none")
+    cmds.text(label="Generate road and rivers:", align="left")
     RoadRiverTab.roadWidth = cmds.floatSliderGrp(label="Road Width", field=True, value=1, min=.01, max=100)
     RoadRiverTab.roadQuality = cmds.intSliderGrp(label="Curve Quality", field=True, value=20, min=2, max=100)
 
@@ -295,12 +313,34 @@ def EnvironmentTab():
     mainTab = cmds.columnLayout(adjustableColumn=True, columnAttach=('both', 20))
     
     cmds.separator(height=10, style="none")
-    elevationSlider = cmds.floatSliderGrp(label="Elevation", field=True, value=45, min=0, max=90, dragCommand=lambda value:EC.elevationChange(value))
-    azimuthSlider = cmds.floatSliderGrp(label="Azimuth", field=True, value=90, min=0, max=360, dragCommand=lambda value:EC.azimuthChange(value))
-    intensitySlider = cmds.floatSliderGrp(label="Intensity", field=True, value=1, min=.1, max=10, dragCommand=lambda value:EC.intensityChange(value))
+    cmds.text(label="Physical Light:", align="left")
+    elevationSlider = cmds.floatSliderGrp(label="Elevation", field=True, value=45, min=0, max=90, 
+                                          dragCommand=lambda value:EC.elevationChange(value),
+                                          changeCommand=lambda value:EC.elevationChange(value))
+    azimuthSlider = cmds.floatSliderGrp(label="Azimuth", field=True, value=90, min=0, max=360, 
+                                        dragCommand=lambda value:EC.azimuthChange(value),
+                                        changeCommand=lambda value:EC.azimuthChange(value))
+    intensitySlider = cmds.floatSliderGrp(label="Intensity", field=True, value=1, min=.1, max=10, 
+                                          dragCommand=lambda value:EC.intensityChange(value),
+                                          changeCommand=lambda value:EC.intensityChange(value))
 
     cmds.separator(height=5, style="none")
     cmds.button(label='Create Sky Dome', command=lambda x: EC.createSkyLight(elevationSlider, azimuthSlider, intensitySlider))
+
+    cmds.separator(height=20)
+    cmds.text(label="Environment Fog:", align="left")
+    colorSlider = cmds.colorSliderGrp(label="Color", rgb=(1,1,1), 
+                                      dragCommand=lambda value:EC.colorChange(colorSlider),
+                                      changeCommand=lambda value:EC.colorChange(colorSlider))
+    distanceSlider = cmds.floatSliderGrp(label="Distance", field=True, value=.02, min=0, max=1000, step=.01, 
+                                         dragCommand=lambda value:EC.distanceChange(value), 
+                                         changeCommand=lambda value:EC.distanceChange(value))
+    heightSlider = cmds.floatSliderGrp(label="Height", field=True, value=5, min=0, max=1000, step=.1, 
+                                        dragCommand=lambda value:EC.heightChange(value),
+                                        changeCommand=lambda value:EC.heightChange(value))
+
+    cmds.separator(height=5, style="none")
+    cmds.button(label='Create Environment Fog', command=lambda x: EC.createAiFog(colorSlider, distanceSlider, heightSlider))
 
     cmds.setParent('..')
 
