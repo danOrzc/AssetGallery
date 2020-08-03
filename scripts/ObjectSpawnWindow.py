@@ -95,20 +95,28 @@ def SpawnObjectsTab():
     cmds.separator(height=5, style="none")
     cmds.rowLayout(numberOfColumns=4, adjustableColumn=4, columnAttach4=("both","both","both","both"), columnOffset4=(10,10,10,10))
     placingRadio = cmds.radioCollection()
-    cmds.radioButton("single", label="Single Object", select=True)
+    cmds.radioButton("single", label="Single Object", select=True, 
+                    onCommand=lambda x: cmds.columnLayout(randomControlLayout, edit=True, enable=False),
+                    offCommand=lambda x: cmds.columnLayout(randomControlLayout, edit=True, enable=True))
     cmds.radioButton("curve", label="Along Curve")
-    cmds.radioButton("range", label="In Range")
-    cmds.radioButton("mesh", label="On Mesh")
+    cmds.radioButton("range", label="In Range",
+                    onCommand=lambda x: cmds.columnLayout(rangeLayout, edit=True, visible=True),
+                    offCommand=lambda x: cmds.columnLayout(rangeLayout, edit=True, visible=False))
+    #cmds.radioButton("mesh", label="On Mesh")
+    cmds.separator(style="none")
     cmds.setParent(mainTab)
 
     cmds.separator(height=10, style="none")
 
+    randomControlLayout = cmds.columnLayout(enable=False)
     SpawnObjectsTab.BuildingAmount = cmds.intSliderGrp(label="Building Number", field=True, value=10, min=2, max=50)
     SpawnObjectsTab.RandomRotation = cmds.floatSliderGrp(label="Random Rotation", field=True, value=15, min=0, max=360)
     SpawnObjectsTab.RandomScale = cmds.floatSliderGrp(label="Random Scale", field=True, value=0, min=0, max=10)
+    cmds.setParent(mainTab)
 
-    curveLayout = cmds.columnLayout()
-    
+    rangeLayout = cmds.columnLayout(visible=False)
+    SpawnObjectsTab.MinimumField = cmds.floatFieldGrp(label="Minimum Range: ", numberOfFields=3)
+    SpawnObjectsTab.MaximumField = cmds.floatFieldGrp(label="Maximum Range: ", numberOfFields=3)
     cmds.setParent(mainTab)
 
     cmds.separator(height=10, style="none")
@@ -152,7 +160,9 @@ def choosePlacement(*args):
     if "single" in placingMethod:
         loadSingleObject()
     if "curve" in placingMethod:
-        loadInCurve()
+        loadMultiple("curve")
+    if "range" in placingMethod:
+        loadMultiple("range")
 
 def loadSingleObject(*args):
     selectedRadio = cmds.radioCollection(loadMethodRadio, query=True, select=True)
@@ -169,13 +179,10 @@ def loadSingleObject(*args):
             else: 
                 asset.loadAsset()
 
-def loadInCurve(*args):
-    selectedCurve = cmds.ls(selection=True)
+def loadMultiple(method, *args):
 
-    if not selectedCurve:
-        return
-
-    selectedCurve = selectedCurve[0]
+    selectedCurve = None
+    minRangeX = minRangeY = minRangeZ = maxRangeX = maxRangeY = maxRangeZ = 0
 
     selectedRadio = cmds.radioCollection(loadMethodRadio, query=True, select=True)
     objectIconsList = cmds.layout(objectScroll, query=True, childArray=True)
@@ -191,7 +198,32 @@ def loadInCurve(*args):
         if isSelected:
             selectedObjects.append(cmds.iconTextCheckBox(obj, query=True, label=True))
 
-    for position in ObjScatter.scatterOnCurve(selectedCurve, buildingAmount-1):
+    if not selectedObjects:
+        return
+        
+    scatteringFunction = None
+
+    if method == "curve":
+        scatteringFunction = ObjScatter.scatterOnCurve
+        selectedCurve = cmds.ls(selection=True)
+
+        if not selectedCurve:
+            return
+
+        selectedCurve = selectedCurve[0]
+
+    if method == "range":
+        scatteringFunction = ObjScatter.scatterOnRange
+        minValues = cmds.floatFieldGrp(SpawnObjectsTab.MinimumField, query=True, value=True)
+        minRangeX, minRangeY, minRangeZ = minValues[0], minValues[1], minValues[2]
+
+        maxValues = cmds.floatFieldGrp(SpawnObjectsTab.MaximumField, query=True, value=True)
+        maxRangeX, maxRangeY, maxRangeZ = maxValues[0], maxValues[1], maxValues[2]
+        
+
+    for position in scatteringFunction(objectCount=buildingAmount, curve=selectedCurve,
+                                       minX=minRangeX, minY=minRangeY, minZ=minRangeZ, maxX=maxRangeX, maxY=maxRangeY, maxZ=maxRangeZ):
+        
         asset = AssetIcon(random.choice(selectedObjects))
         loadedAssetNode = None
 
@@ -209,7 +241,6 @@ def loadInCurve(*args):
         cmds.scale(newScale, newScale, newScale, loadedAssetNode, absolute=True)
 
         cmds.parent(loadedAssetNode, finalGroup)
-
 
 def panelDropLoad( dragControl, dropControl, messages, x, y, dragType ): 
     loadedObject = cmds.iconTextCheckBox(dragControl, query=True, label=True)
