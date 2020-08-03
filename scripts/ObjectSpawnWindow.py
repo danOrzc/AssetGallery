@@ -267,8 +267,12 @@ def RoadRiverTab():
     RoadRiverTab.roadQuality = cmds.intSliderGrp(label="Curve Quality", field=True, value=20, min=2, max=100)
 
     cmds.separator(height=5, style="none")
-    cmds.button(label='Create road', command=buildRoad)
+    cmds.rowLayout(numberOfColumns=3, adjustableColumn=2)
+    cmds.button(label='Create Road', width=200, command=buildRoad)
+    cmds.separator(style="none")
+    cmds.button(label="Create River", width=200, command=buildRiver)
 
+    cmds.setParent('..')
     cmds.setParent('..')
 
     return mainTab
@@ -278,6 +282,12 @@ def buildRoad(*args):
     quality = cmds.intSliderGrp(RoadRiverTab.roadQuality, query=True, value=True)
 
     RC.createRoad(width, quality)
+
+def buildRiver(*args):
+    width = cmds.floatSliderGrp(RoadRiverTab.roadWidth, query=True, value=True)
+    quality = cmds.intSliderGrp(RoadRiverTab.roadQuality, query=True, value=True)
+
+    RC.createRiver(width, quality)
 
 ##########################
 
