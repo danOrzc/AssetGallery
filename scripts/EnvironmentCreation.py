@@ -1,3 +1,11 @@
+""" Environment Creation.
+
+This module contains functions to create environment details on the scene.
+
+Attributes:
+    physicalLight (str): Reference to the physical light node.
+    envFog (str): Reference to the environment fog node.
+"""
 import mtoa.utils as mutils
 import mtoa.core as core
 from maya import cmds
@@ -54,7 +62,6 @@ class EnvironmentFog(object):
         cmds.setAttr("{}.groundNormalZ".format(self.fogNode), normal[2])
         
 
-
 def createSkyLight(elevationSlider, azimuthSlider, intensitySlider, *args):
     elevation = cmds.floatSliderGrp(elevationSlider, query=True, value=True)
     azimuth = cmds.floatSliderGrp(azimuthSlider, query=True, value=True)
@@ -95,4 +102,3 @@ def distanceChange(distance, *args):
 def heightChange(height, *args):
     if envFog:
         envFog.setHeight(height)
-

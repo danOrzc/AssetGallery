@@ -1,3 +1,7 @@
+"""Road Creation.
+
+This module contains functions that create a road or river on top of a curve.
+"""
 from maya import cmds
 
 def createRoad(roadWidth=1, quality=50, *args):

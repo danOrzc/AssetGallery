@@ -13,7 +13,6 @@ from maya import cmds
 import maya.api.OpenMaya as om
 reload(ObjScatter)
 reload(OL)
-reload(AC)
 reload(EC)
 reload(RC)
 
@@ -341,69 +340,108 @@ def loadMultiple(method, *args):
 
     ### The user chose "mesh"
     if method == "mesh":
-        scatteringFunction = ObjScatter.scatterOnMesh
-        selectedMesh = cmds.ls(selection=True)
 
+        # Set function from ObjectScattering.py
+        scatteringFunction = ObjScatter.scatterOnMesh
+
+        # Get reference of selected object
+        selectedMesh = cmds.ls(selection=True)
         if not selectedMesh:
             return
-
         selectedMesh = selectedMesh[0]
-        
+
+    # Create group for the spawned copies    
     finalGroup = cmds.group(name="CurveAssetGroup", empty=True)
     cmds.select(clear=True)
 
+    ### Iterate over the generated positions of the function with given parameters
+    # scatteringFunction is a reference to a function in ObjectScattering.py
+    # these functions are generators, they yield a value and we can iterate
+    # to get the next value generated.
     for position in scatteringFunction(objectCount=buildingAmount, curve=selectedCurve,
                                        minX=minRangeX, minY=minRangeY, minZ=minRangeZ, maxX=maxRangeX, maxY=maxRangeY, maxZ=maxRangeZ,
                                        mesh=selectedMesh):
         
+        # Randomly instance an asset from the selectedObjects list
         asset = AssetIcon(random.choice(selectedObjects))
         loadedAssetNode = None
 
+        # Create copy based on the mode selected by the user
         if "standin" in selectedRadio:
             loadedAssetNode = asset.loadArnoldAsset()
         else: 
             loadedAssetNode = asset.loadAsset()
 
+        # Move this copy to the generated position
         cmds.move(position[0], position[1], position[2], loadedAssetNode, absolute=True)
 
+        # If there is a fourth index on the position, that means we have rotation info
+        # use that info to rotate the asset.
+        # It is used to match an objects rotation to a face normal.
         if len(position) == 4:
             cmds.rotate(position[3][0], position[3][1], position[3][2], loadedAssetNode, absolute=True)
         
+        # Add random rotation
         angle = random.uniform(-rotationVariation, rotationVariation)
         cmds.rotate(angle, loadedAssetNode, y=True, relative=True, objectSpace=True)
 
+        # Add random scale
         newScale = random.uniform(1, 1+scaleVariation)
         cmds.scale(newScale, newScale, newScale, loadedAssetNode, absolute=True)
 
         #cmds.FreezeTransformations(loadedAssetNode)
 
+        # Parent copy to group
         cmds.parent(loadedAssetNode, finalGroup)
 
-def panelDropLoad( dragControl, dropControl, messages, x, y, dragType ): 
+def panelDropLoad( dragControl, dropControl, messages, x, y, dragType ):
+    """This function is called when an assetIcon is dropped to the modelEditor.
+    
+    Attributes:
+        dragControl (str): the name of the control that was dragged.
+        dropControl (str): the control where it was drag into.
+        x (float): X Location of the mouse pointer when object dropped.
+        y (float): Y Location of the mouse pointer when object dropped.
+    """
+    # Get name of the asset that was dragged
     loadedObject = cmds.iconTextCheckBox(dragControl, query=True, label=True)
+    # Get mode from standin or assembly
     selectedRadio = cmds.radioCollection(loadMethodRadio, query=True, select=True)
+    # Instantiate AssetIcon
     asset = AssetIcon(loadedObject)
    
     loadedAssetNode = None
 
+    # Load asset using correct function
     if "standin" in selectedRadio:
         loadedAssetNode = asset.loadArnoldAsset()
     else: 
         loadedAssetNode = asset.loadAsset()
-        
+    
+    # Get a position in the world using the mouse pointer as reference
     loadedLocation = cmds.autoPlace(useMouse=True)
+    # Move the asset to that position
     cmds.move(loadedLocation[0], loadedLocation[1], loadedLocation[2], loadedAssetNode, absolute=True)
 
 ############################################# ROAD / RIVER SECTION #############################################################
 
 def RoadRiverTab():
+    """This function builds the layout for the road/river generation.
+    
+    Returns:
+        str: Reference to the layout created.
+    """
+
+    # Main layout
     mainTab = cmds.columnLayout(adjustableColumn=True, columnAttach=('both', 20))
     
+    ### Geo parameters
     cmds.separator(height=10, style="none")
     cmds.text(label="Generate road and rivers:", align="left")
     RoadRiverTab.roadWidth = cmds.floatSliderGrp(label="Road Width", field=True, value=1, min=.01, max=100)
     RoadRiverTab.roadQuality = cmds.intSliderGrp(label="Curve Quality", field=True, value=20, min=2, max=100)
 
+    ### Choose which king of geo
     cmds.separator(height=5, style="none")
     cmds.rowLayout(numberOfColumns=3, adjustableColumn=2)
     cmds.button(label='Create Road', width=200, command=buildRoad)
@@ -416,30 +454,48 @@ def RoadRiverTab():
     return mainTab
 
 def buildRoad(*args):
+    """This function builds a road geometry"""
+
+    # Query parameters
     width = cmds.floatSliderGrp(RoadRiverTab.roadWidth, query=True, value=True)
     quality = cmds.intSliderGrp(RoadRiverTab.roadQuality, query=True, value=True)
 
+    # Create using RoadCreation.py
     RC.createRoad(width, quality)
 
 def buildRiver(*args):
+    """This function builds a river geometry"""
+
+    # Query parameters
     width = cmds.floatSliderGrp(RoadRiverTab.roadWidth, query=True, value=True)
     quality = cmds.intSliderGrp(RoadRiverTab.roadQuality, query=True, value=True)
 
+    # Create using RoadCreation.py
     RC.createRiver(width, quality)
 
 ############################################# ENVIRONMENT #############################################################
 
 def EnvironmentTab():
+    """This function builds the layout for the environment generation
+    
+    Returns:
+        str: Reference to the layout created.
+    """
+
     mainTab = cmds.columnLayout(adjustableColumn=True, columnAttach=('both', 20))
     
+    ### Physical Light
     cmds.separator(height=10, style="none")
     cmds.text(label="Physical Light:", align="left")
+    # Slider to select the elevation
     elevationSlider = cmds.floatSliderGrp(label="Elevation", field=True, value=45, min=0, max=90, 
                                           dragCommand=lambda value:EC.elevationChange(value),
                                           changeCommand=lambda value:EC.elevationChange(value))
+    # Slider to select the azimuth (simulat to the height, kinda)
     azimuthSlider = cmds.floatSliderGrp(label="Azimuth", field=True, value=90, min=0, max=360, 
                                         dragCommand=lambda value:EC.azimuthChange(value),
                                         changeCommand=lambda value:EC.azimuthChange(value))
+    # Slider for the light's intensity
     intensitySlider = cmds.floatSliderGrp(label="Intensity", field=True, value=1, min=.1, max=10, 
                                           dragCommand=lambda value:EC.intensityChange(value),
                                           changeCommand=lambda value:EC.intensityChange(value))
@@ -447,14 +503,18 @@ def EnvironmentTab():
     cmds.separator(height=5, style="none")
     cmds.button(label='Create Sky Dome', command=lambda x: EC.createSkyLight(elevationSlider, azimuthSlider, intensitySlider))
 
+    ### Environment fog
     cmds.separator(height=20)
     cmds.text(label="Environment Fog:", align="left")
+    # Slider for the color
     colorSlider = cmds.colorSliderGrp(label="Color", rgb=(1,1,1), 
                                       dragCommand=lambda value:EC.colorChange(colorSlider),
                                       changeCommand=lambda value:EC.colorChange(colorSlider))
+    # Slider for fog's distance
     distanceSlider = cmds.floatSliderGrp(label="Distance", field=True, value=.02, min=0, max=1000, step=.01, 
                                          dragCommand=lambda value:EC.distanceChange(value), 
                                          changeCommand=lambda value:EC.distanceChange(value))
+    # Slider for fog's height
     heightSlider = cmds.floatSliderGrp(label="Height", field=True, value=5, min=0, max=1000, step=.1, 
                                         dragCommand=lambda value:EC.heightChange(value),
                                         changeCommand=lambda value:EC.heightChange(value))
@@ -465,5 +525,3 @@ def EnvironmentTab():
     cmds.setParent('..')
 
     return mainTab
-
-
