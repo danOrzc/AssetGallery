@@ -11,6 +11,7 @@ import RoadCreation as RC
 import ObjectScattering as ObjScatter
 from maya import cmds
 import maya.api.OpenMaya as om
+reload(AC)
 reload(ObjScatter)
 reload(OL)
 reload(EC)
@@ -41,7 +42,8 @@ class AssetIcon(object):
     def buildIcon(self):
         """This function creates a iconTextCheckBox in the current layout with the set attributes."""
 
-        cmds.iconTextCheckBox(image=self.icon, style="iconOnly", label=self.name, height=200, width=200, dragCallback=lambda *x: self.iconDrag(*x))
+        cmds.iconTextCheckBox(image=self.icon, style="iconOnly", label=self.name, height=200, width=200, dragCallback=lambda *x: self.iconDrag(*x),
+                              ann="Middle mouse click and drag to perspective view.")
 
     def loadAsset(self, *args):
         """This function loads an Assembly Reference based on the name of this AssetIcon.
@@ -94,12 +96,13 @@ def enableEditorDrop():
 def populateUI():
     """This function manages everything inside the UI, the tabs, buttons, etc."""
     
-    # Main form layout and it's attachment config
+    # Main form layout
     form = cmds.formLayout()
-    cmds.formLayout( form, edit=True, attachForm=((tabs, 'top', 0), (tabs, 'left', 0), (tabs, 'bottom', 0), (tabs, 'right', 0)) )
 
     # Tab Layout
     tabs = cmds.tabLayout(innerMarginWidth=5, innerMarginHeight=5)
+    # Form attachment config
+    cmds.formLayout( form, edit=True, attachForm=((tabs, 'top', 0), (tabs, 'left', 0), (tabs, 'bottom', 0), (tabs, 'right', 0)) )
 
     # The different Tabs on the window
     spawnTab = SpawnObjectsTab()
@@ -126,7 +129,8 @@ def SpawnObjectsTab():
 
     ### Asset Name Text Field
     cmds.separator(height=10, style="none")
-    SpawnObjectsTab.UserField = cmds.textFieldButtonGrp(placeholderText="Write Asset's Name", buttonLabel="Save Asset", buttonCommand=lambda: saveAsset())
+    SpawnObjectsTab.UserField = cmds.textFieldButtonGrp(placeholderText="Write Asset's Name", buttonLabel="Save Asset", buttonCommand=lambda: saveAsset(),
+                                ann="Assign a name for the asset that will be used in the outliner and in the directory hierarchy.")
     
     ### Asset Gallery Layout
     cmds.separator(height=10, style="none")
@@ -141,9 +145,11 @@ def SpawnObjectsTab():
     global loadMethodRadio
     cmds.rowLayout(numberOfColumns=3, adjustableColumn=3)
     loadMethodRadio = cmds.radioCollection()
-    cmds.radioButton("standin", label="Load as Arnold StandIn", select=True)    # Radio button for StandIn
+    cmds.radioButton("standin", label="Load as Arnold StandIn", select=True,
+                     ann="Arnold standIns bring materials. Render in Arnold to see them.")    # Radio button for StandIn
     cmds.separator(width=20, style="none")
-    cmds.radioButton("assembly", label="Load as Assembly Reference")    # Radio button for Assembly
+    cmds.radioButton("assembly", label="Load as Assembly Reference",
+                     ann="Assembly references can change their representation mode.")    # Radio button for Assembly
     cmds.setParent(mainTab)
 
     ### Choose how to set the location of the object
@@ -156,15 +162,19 @@ def SpawnObjectsTab():
     # Create only one copy
     cmds.radioButton("single", label="Single Object", select=True, 
                     onCommand=lambda x: cmds.columnLayout(randomControlLayout, edit=True, enable=False),
-                    offCommand=lambda x: cmds.columnLayout(randomControlLayout, edit=True, enable=True))
+                    offCommand=lambda x: cmds.columnLayout(randomControlLayout, edit=True, enable=True),
+                    ann="Create one single object. MMC and drag to scene does the same.")
     # Create copies along a curve
-    cmds.radioButton("curve", label="Along Curve")
+    cmds.radioButton("curve", label="Along Curve",
+                     ann="Spawn assets along a previously created curve")
     # Create copies between a range in world space
     cmds.radioButton("range", label="In Range",
                     onCommand=lambda x: cmds.columnLayout(rangeLayout, edit=True, visible=True),
-                    offCommand=lambda x: cmds.columnLayout(rangeLayout, edit=True, visible=False))
+                    offCommand=lambda x: cmds.columnLayout(rangeLayout, edit=True, visible=False),
+                    ann="Creates objects in a defined range of coordinates.")
     # Create copies on a mesh's surface
-    cmds.radioButton("mesh", label="On Mesh")
+    cmds.radioButton("mesh", label="On Mesh",
+                     ann="Locate assets on the surface of a selected mesh.")
     cmds.setParent(mainTab)
 
     ### Randomization parameters

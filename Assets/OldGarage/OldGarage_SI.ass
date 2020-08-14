@@ -1,0 +1,121 @@
+### exported: Tue Aug  4 05:34:05 2020
+### from:     Arnold 6.0.0.0 [ddee0ddd] windows icc-17.0.2 oiio-2.1.4 osl-1.11.0 vdb-4.0.0 clm-1.1.1.118 rlm-12.4.2 optix-6.5.0 2019/11/07 19:59:28
+### host app: MtoA 4.0.0 c0193302 (master) Maya 2020
+### bounds: -0.703923 0.00578311 -0.325011 0.703923 0.908237 0.325012
+### user: dog_d
+### render_layer: defaultRenderLayer
+### scene: C:/Users/dog_d/Documents/BCIT/AdvancedScripting/Props1/Props/scenes/MainScene_v2.ma
+
+
+
+options
+{
+ AA_samples 3
+ xres 960
+ yres 540
+ texture_per_file_stats on
+ texture_searchpath "C:/Users/dog_d/Documents/BCIT/AdvancedScripting/Props1/Props/sourceimages"
+ texture_automip off
+ camera "/persp/perspShape"
+ color_manager "defaultColorMgtGlobals"
+ frame 1
+ procedural_searchpath "C:/Users/dog_d/Documents/BCIT/AdvancedScripting/Props1/Props/"
+ GI_diffuse_depth 1
+ GI_specular_depth 1
+ GI_transmission_depth 8
+ declare render_layer constant STRING
+ render_layer "defaultRenderLayer"
+}
+
+color_manager_syncolor
+{
+ name defaultColorMgtGlobals
+ native_catalog_path "C:/Program Files/Autodesk/Maya2020/synColor"
+ custom_catalog_path "C:/Users/dog_d/Documents/maya/synColor/Shared/"
+ rendering_color_space "scene-linear Rec 709/sRGB"
+}
+
+polymesh
+{
+ name /warehouse/warehouseShape
+ visibility 255
+ sidedness 255
+ matrix
+ 1 0 0 0
+ 0 1 0 0
+ 0 0 1 0
+ 0 0 0 1
+ shader "WAREHOUSE:FIRSTBUILDING"
+ id 470410132
+ nsides 11 1 b85UINT
+B%<_l4%<_l4%<_l
+ vidxs 44 1 b85UINT
+B%X7x0%s\54&:+G8&UOY<&pF>6'n6UR(P*$Z)1rHb'7CIZ(4d'\(Oc^X
+ nidxs 44 1 b85UINT
+B$v2N*$[2`0%XA8:&:4\B&p428(4HXR)M/Kb*ek>r,)R2--B9%=.ZtmM
+ uvidxs 44 1 b85UINT
+B%s\22&:+D6&UOV:&psh>'7C%B(k<'Z*.woj+G^c%,`EV5.$,IE/<h<U
+ shidxs 11 1 BYTE
+  0 0 0 0 0 0 0 0 0 0 0
+ vlist 18 1 b85VECTOR
+8>Nus75'2/8.]*'8>9Q275'2/8.k$'8>9Q275'2/8/C*$8>Nus75'2/8/Q$$8>\5m75'2/8/,Q`8>Nus8D8[58.]*'8>9Q28D8[58.k$'8>9Q28D8[58/C*$8>Nus8D8[58/Q$$8>\5m8D8[58/,Q`aJLfG75'2/8.rn68>AK275'2/8.rn6aJLfG8Bdu)8.rn68>AK28Bdu)8.rn6aJLfG8<m.)a;AT/8>AK28<m.)a;AT/aJLfG75'2/a;AT/8>AK275'2/a;AT/
+ nlist 34 1 b85VECTOR
+8.[aEzaQ7[7aMAkjzaG>)@aMAkjzaG>)@8.[aEzaQ7[7aMAkjz8;MMjaMAkjz8;MMj8.[V/z8EG,R8.[V/z8EG,Ryz5xG:\yz5xG:\zzyzzyzzyzzyz8E>@oa;,$qz8E>@oa;,$qz8E>@oa;,$qz8E>@oa;,$qzzaRT=dzzaRT=dzzaRT=dzzaRT=dzaRT=dzzaRT=dzzaRT=dzzaRT=dzyzzyzzyzzyzzaRT=dzzaRT=dzzaRT=dzzaRT=dzz
+ uvlist 36 1 b85VECTOR2
+8FR`K8C^am8FR`K8D<MJ8FR`K8Do9)8FR`J8EM$\8FR`J8F*e;8FR`J8F]Pn744+N8C^am744+N8D<MK744+N8Do9*744-$8EM$\744+N8F*e;744+N8F]Pm7,8EY7+G*=8>:857+G,=8>:8784aHe7,8E084aHf8>_JJ83<hA8>_JM72JTe8FI@J72JXA8FI@H83<hA8>GU-8=FN+8>GU-7.j-`8FO/M7.j-`8FO/M8=FN+8>h/(83<7n8>h.o78O*l8FB7d78O;G8FB7i83<7v80fs-8543:8>-5b8543:8>-5b8@6&t80fs-8C>Y47-t/58543480?2A8543480?2A8C>Y27-t/58@6&r
+ smoothing on
+ step_size 0
+ volume_padding 0
+ declare dcc_name constant STRING
+ dcc_name "warehouseShape"
+}
+
+lambert
+{
+ name WAREHOUSE:FIRSTBUILDING
+ Kd 0.800000012
+ Kd_color WAREHOUSE:file1
+ opacity 1 1 1
+}
+
+image
+{
+ name WAREHOUSE:file1
+ filename "C:/Users/dog_d/Documents/BCIT/AdvancedScripting/Props1/Props/sourceimages/WAREHOUSE.tx"
+ color_space ""
+ filter "smart_bicubic"
+ swrap "periodic"
+ twrap "periodic"
+ sscale 1
+ tscale 1
+ soffset 0
+ toffset 0
+ uvset ""
+ ignore_missing_textures on
+ missing_texture_color 0.5 0.5 0.5 0
+}
+
+persp_camera
+{
+ name /persp/perspShape
+ matrix
+ -0.88458097 9.71445147e-17 -0.466386646 0
+ -0.128071144 0.961557686 0.242908522 0
+ 0.448457658 0.27460292 -0.850575686 0
+ -2.8355751 1.28351414 14.8446407 1
+ near_clip 0.100000001
+ far_clip 10000
+ shutter_start 0
+ shutter_end 0
+ shutter_type "box"
+ rolling_shutter "off"
+ rolling_shutter_duration 0
+ motion_start 0
+ motion_end 0
+ exposure 0
+ fov 54.4322243
+ uv_remap 0 0 0 1
+ declare dcc_name constant STRING
+ dcc_name "perspShape"
+}
+

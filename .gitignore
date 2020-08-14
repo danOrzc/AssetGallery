@@ -1,4 +1,5 @@
 # Ignore Python compile files
 *.pyc
 
-Assets/*
+# Include preview assets
+#Assets/*
