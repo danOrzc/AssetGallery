@@ -1,9 +1,15 @@
 To use the tool:
 
-Option 1.- Using Maya's modules to recognize scripts location
-	Drag "dragToMaya.py" folder to Maya's viewport.
-	When prompted, please restart Maya
-	When opening Maya again, the tool will be available to import.
+Using Maya's modules to recognize scripts location
+Drag "dragToMaya.py" folder to Maya's viewport.
+When prompted, please restart Maya
+When opening Maya again, the tool will be available to import.
+
+Import the tool by running this command:
+
+import ObjectSpawnWindow as OSW
+reload(OSW)
+OSW.createWindow()
 
 	
 To delete the tool:
